@@ -1,12 +1,30 @@
 import React from 'react';
+import Expense from './Expense.jsx';
+import Loan from './Loan.jsx';
+import accounting from 'accounting';
+import data from '../data.js'
 
 class App extends React.Component {
   constructor(props) {
     super(props)
 
     this.state = {
-
+      loanAmount: '12390',
+      interestRate: '.0899',
+      salary: '72000',
+      beginWorkingDate: '7/20/2020',
+      expenses: data.expenses,
+      loans: data.loans
     }
+
+    this.handleInput = this.handleInput.bind(this);
+    this.handleMonthlyExpenseInput = this.handleMonthlyExpenseInput.bind(this);
+    this.handleEstimateTakehomePayAfterTaxes = this.handleEstimateTakehomePayAfterTaxes.bind(this);
+    this.handleCalculateTotalExpensesEachPayCheck = this.handleCalculateTotalExpensesEachPayCheck.bind(this);
+    this.handleCalculateWhenLoanCanBePaidOff = this.handleCalculateWhenLoanCanBePaidOff.bind(this);
+    this.addExpense = this.addExpense.bind(this);
+    this.handleLoanInput = this.handleLoanInput.bind(this);
+    this.addLoan = this.addLoan.bind(this);
   }
 
   monthlyToBiWeeklyConverter(expense) {
@@ -21,26 +39,29 @@ class App extends React.Component {
     return payCheck
   }
 
-  calculateBiWeeklyExpenses(biWeeklyIncome, expensesArray) {
-    console.log('biWeeklyIncome: ', biWeeklyIncome)
+  calculateBiWeeklyExpenses(grossPayCheck, expensesArray) {
+    console.log('Gross PayCheck: ', grossPayCheck)
     var fixedExpenses = [];
     var percentageExpenses = [];
     for (var i = 0; i < expensesArray.length; i++) {
-      if (expensesArray[i] < 1) {
-        percentageExpenses.push(expensesArray[i]);
+      var currentNum = parseFloat(expensesArray[i]);
+      if (currentNum < 1) {
+        percentageExpenses.push(currentNum);
       }
-      if (expensesArray[i] > 1) {
-        fixedExpenses.push(expensesArray[i])
+      if (currentNum > 1) {
+        fixedExpenses.push(currentNum)
       }
     }
     var totalBiWeeklyExpense = 0;
     console.log('fixedExpenses: ', fixedExpenses)
     for (var i = 0; i < fixedExpenses.length; i++) {
-      totalBiWeeklyExpense += fixedExpenses[i]
+      var currentExpense = this.monthlyToBiWeeklyConverter(fixedExpenses[i])
+      console.log('currentFixedExpense Converted: ', currentExpense)
+      totalBiWeeklyExpense += currentExpense
     }
     console.log('percentageExpenses: ', percentageExpenses)
     for (var i = 0; i < percentageExpenses.length; i++) {
-      var expenseAmount = biWeeklyIncome * percentageExpenses[i];
+      var expenseAmount = grossPayCheck * percentageExpenses[i];
       totalBiWeeklyExpense += expenseAmount
     }
     return totalBiWeeklyExpense
@@ -102,87 +123,234 @@ class App extends React.Component {
     return yearlyIncome * UTR;
   }
 
-  calculateTotalAfterExpenses(biWeeklyIncome, totalBiWeeklyExpense) {
-    var totalAfterExpenses = biWeeklyIncome - totalBiWeeklyExpense;
-    return totalAfterExpenses;
+  handleInput(event) {
+    var id = event.target.id;
+    var value = event.target.value;
+    this.setState({
+      [id]: value
+    })
   }
 
-  reoccurringPaymentCreator(nextPaymentDue, frequency, paymentAmt, lastPaymentDue) {
-    return {
-      nextPaymentDue,
-      frequency,
-      paymentAmt,
-      lastPaymentDue
+  handleMonthlyExpenseInput(event) {
+    var id = event.target.parentElement.id;
+    var expenses = this.state.expenses;
+    var className = event.target.className;
+    for (var i = 0; i < expenses.length; i++) {
+      var currentExpense = expenses[i];
+      if (currentExpense.id == id) {
+        expenses[i][className] = event.target.value;
+      }
     }
+    this.setState({
+      expenses
+    })
   }
 
-  loan(amtDue, interestRate, obj, obj2) {
-    var nextPaymentDue = obj.nextPaymentDue;
-    console.log(obj, 'nextPaymentDue: ', nextPaymentDue)
-    var latestPaymentMade = this.addMonths(nextPaymentDue, -1);
-    console.log('-----', nextPaymentDue, latestPaymentMade);
-    while(obj.lastPaymentDue >= nextPaymentDue) {
-      var dailyRate = interestRate / 365;
-      var interestAcquiredBetweenPaymentPeriods = dailyRate * this.calculateDaysBetweenDates(latestPaymentMade, nextPaymentDue);
-      amtDue += interestAcquiredBetweenPaymentPeriods;
-      amtDue -= obj.paymentAmt;
-      console.log({
-        amtDue,
-        interestAcquiredBetweenPaymentPeriods,
-        dailyRate,
-        latestPaymentMade,
-        nextPaymentDue
-      })
-      nextPaymentDue = this.addMonths(nextPaymentDue, 1);
-      latestPaymentMade = this.addMonths(latestPaymentMade, 1)
+  addExpense() {
+    var expense = {
+      id: this.state.expenses.length + 1,
+      description: '',
+      amount: 0
     }
-
-    while(obj2.lastPaymentDue >= nextPaymentDue) {
-      var dailyRate = interestRate / 365;
-      var interestAcquiredBetweenPaymentPeriods = (dailyRate * this.calculateDaysBetweenDates(latestPaymentMade, nextPaymentDue)) * amtDue;
-      amtDue += interestAcquiredBetweenPaymentPeriods;
-      amtDue -= obj2.paymentAmt;
-      console.log({
-        amtDue,
-        interestAcquiredBetweenPaymentPeriods,
-        dailyRate,
-        latestPaymentMade,
-        nextPaymentDue
-      })
-      nextPaymentDue = this.addMonths(nextPaymentDue, 1);
-      latestPaymentMade = this.addMonths(latestPaymentMade, 1)
-    }
-    return amtDue;
+    var expenses = this.state.expenses;
+    expenses.push(expense);
+    this.setState({
+      expenses
+    })
   }
 
-  calculateDaysBetweenDates(date1, date2) {
-    var milliseconds = Math.abs(date1 - date2);
-    var seconds = milliseconds / 1000;
-    var minutes = seconds / 60;
-    var hours = minutes / 60;
-    var days = hours / 24;
-    return days;
+  handleLoanInput(event) {
+    var id = event.target.parentElement.parentElement.id;
+    var loans = this.state.loans;
+    var className = event.target.className;
+    console.log('id: ', id)
+    console.log('loans: ', loans)
+    console.log('className: ', className)
+    for (var i = 0; i < loans.length; i++) {
+      var currentLoans = loans[i];
+      if (currentLoans.id == id) {
+        loans[i][className] = event.target.value;
+      }
+    }
+    this.setState({
+      loans
+    })
   }
 
-  addMonths(date, months) {
-    var newDate = new Date(date);
-    var d = newDate.getDate();
-    newDate.setMonth(newDate.getMonth() + +months);
-    if (newDate.getDate() != d) {
-      newDate.setDate(0);
+  addLoan() {
+    var loan = {
+      id: this.state.loans.length + 1,
+      description: '',
+      amount: 0,
+      interestRate: 0.0
     }
-    return newDate;
+    var loans = this.state.loans;
+    loans.push(loan);
+    this.setState({
+      loans
+    })
+  }
+
+  handleDateTransition(stringDate) {
+    // var date = this.state.beginWorkingDate;
+    var firstSlashIndex = stringDate.indexOf('/');
+    var month = stringDate.substring(0, firstSlashIndex);
+    month -= 1;
+    var dateNoMonth = stringDate.substring(firstSlashIndex + 1, stringDate.length);
+    var secondSlashIndex = dateNoMonth.indexOf('/');
+    var day = dateNoMonth.substring(0, secondSlashIndex);
+    var year = dateNoMonth.substring(secondSlashIndex + 1, dateNoMonth.length);
+    var date = new Date(year, month, day);
+    return date;
+  }
+
+  handleEstimateTakehomePayAfterTaxes() {
+    if (this.state.salary === '') {
+      alert('Please enter a valid salary with no commas or $')
+      return
+    }
+  
+    var taxes = this.estimateTaxes(this.state.salary);
+    console.log(taxes);
+    var takeHomePay = this.state.salary - taxes;
+    var grossPayCheck = this.calculatePayCheck(this.state.salary);
+    var netPayCheck = this.calculatePayCheck(takeHomePay);
+    console.log('netPay: ', netPayCheck)
+    this.setState({
+      takeHomePay,
+      grossPayCheck,
+      netPayCheck
+    }, () => {this.handleCalculateTotalExpensesEachPayCheck()})
+  }
+
+  handleCalculateTotalExpensesEachPayCheck() {
+    //FIX
+    var monthlyExpenses = [];
+    for (var i = 0; i < this.state.expenses.length; i++) {
+      monthlyExpenses.push(this.state.expenses[i]['amount'])
+    }
+    console.log(monthlyExpenses)
+    console.log('++++++++++++++++++++++++')
+    var totalExpense = this.calculateBiWeeklyExpenses(this.state.grossPayCheck, monthlyExpenses);
+    var totalRemainingAfterExpenses = this.state.netPayCheck - totalExpense
+    this.setState({
+      totalExpense,
+      totalRemainingAfterExpenses
+    }, () => {this.handleCalculateWhenLoanCanBePaidOff()})
+  }
+
+  handleCalculateWhenLoanCanBePaidOff() {
+    var beginWorkingDate = this.handleDateTransition(this.state.beginWorkingDate);
+    //calculate when the first paycheck will come. (estimate that it is two weeks after starting the job)
+    var milliseconds= beginWorkingDate.setDate(beginWorkingDate.getDate() + 14);
+    var currentDate = new Date(milliseconds);
+    var daysPast = 0;
+
+    var loans = JSON.parse(JSON.stringify(this.state.loans));
+    console.log('loans: ', loans)
+    for (var i = 0; i < loans.length; i++) {
+      var currentLoan = loans[i];
+      // var currentLoanAmount = parseFloat(currentLoan.amount);
+      while(parseFloat(currentLoan.amount) > 0 || currentLoan.reoccurringLoanInfo.length > 0) {
+
+         //add 1 day to the current date
+        currentDate.setDate(currentDate.getDate() + 1)
+
+        //compound the interest on all loans
+        for (var j = i; j < loans.length; j++) {
+          var currentLoanDaily = loans[j]
+          var currentLoanDailyAmount = parseFloat(currentLoanDaily.amount)
+          var dailyRate = parseFloat(currentLoanDaily.interestRate) / 365;
+          var dailyCompoundedInterest = dailyRate * currentLoanDailyAmount;
+          currentLoanDailyAmount += dailyCompoundedInterest;
+          //check if reoccurring payments are necessary
+          if (currentLoanDaily.reoccurringLoanInfo.length > 0) {
+            if (currentDate.getTime() === Date.parse(currentLoanDaily.reoccurringLoanInfo[0]['date'])) {
+              console.log('TIME FOR ANOTHER SEMESTER OF SCHOOL: ', currentDate)
+              console.log('Loan Amount Before next Semester: ', currentLoanDailyAmount)
+              console.log('REOCCURRING ARRAY: ', currentLoanDaily.reoccurringLoanInfo)
+              currentLoanDailyAmount += parseFloat(currentLoanDaily.reoccurringLoanInfo[0]['amount'])
+              console.log('Loan Amount AFTER next Semester: ', currentLoanDailyAmount)
+              currentLoanDaily.reoccurringLoanInfo.shift()
+            }
+          }
+          currentLoanDaily.amount = currentLoanDailyAmount
+        }
+
+        if (daysPast % 14 === 0 || daysPast === 0) {
+          currentLoan.amount = parseFloat(currentLoan.amount) - this.state.totalRemainingAfterExpenses;
+        }
+        daysPast++
+      }
+      console.log('LOAN PAYED OFF ON: ', currentDate)
+    }
   }
 
 
   render() {
 
-    console.log(this.calculateDaysBetweenDates(new Date(2020, 4, 20), new Date(2020, 5, 20)))
-    console.log(this.addMonths(new Date(2022, 0, 31), 1))
-    console.log(this.loan(12399.95, .129, this.reoccurringPaymentCreator(new Date(2020, 5, 20), 'monthly', 93.50, new Date(2020, 9, 20)), this.reoccurringPaymentCreator(new Date(2020, 10, 20), 'monthly', 396.80, new Date(2023, 10, 20))))
+    var takeHomePay;
+    if (this.state.takeHomePay) {
+      takeHomePay = (
+        <div>
+          <h5>Take Home Pay: {accounting.formatMoney(this.state.takeHomePay)}</h5>
+          <h5>Pay Check After Taxes: {accounting.formatMoney(this.state.netPayCheck)}</h5>
+        </div>
+      )
+    }
+
+    var totalExpense;
+    if (this.state.totalExpense) {
+      totalExpense = (
+        <div>
+          <h5>Total Expenses Each Pay Period: {accounting.formatMoney(this.state.totalExpense)}</h5>
+          <h5>Amount Left After Expenses Each Pay Period: {accounting.formatMoney(this.state.totalRemainingAfterExpenses)} </h5>
+        </div>
+      )
+    }
+
+    var loanComplete;
+    if (this.state.loanPaidOffOn) {
+      loanComplete = (
+        <div>
+          <h5>Loan will be Paid off in Full on: {this.state.loanPaidOffOn.toDateString()}</h5>
+          <h5>The Amount left over from last payment is: {accounting.formatMoney(this.state.amountLeftAfterLoanPaidOff)}</h5>
+        </div>
+      )
+    }
 
     return (
-      <h1>Loan Smasher</h1>
+      <div>
+        <h1>Loan Smasher</h1>
+        <h2>Inputs</h2>
+        <h3>Income</h3>
+        <div>
+          <span>Salary: </span>
+          <input type='text' onChange={this.handleInput} id='salary' value={this.state.salary} placeholder='Ex: 40000'></input>
+        </div>
+        <div>
+          <span>Begin Working On: </span>
+          <input type='text' onChange={this.handleInput} id='beginWorkingDate' value={this.state.beginWorkingDate} placeholder='Ex: 6/4/1996'></input>
+        </div>
+        <h3>Monthly Expenses: </h3>
+        {this.state.expenses.map(expense => {
+          return <Expense expense={expense} key={expense.id} handleMonthlyExpenseInput={this.handleMonthlyExpenseInput}/>
+        })}
+        <button onClick={this.addExpense}>Add Monthly Expense +</button>
+        <h3>Loan Info</h3>
+        {this.state.loans.map(loan => {
+          return <Loan loan={loan} key={loan.id} handleLoanInput={this.handleLoanInput}/>
+        })}
+        <div>
+          <button onClick={this.addLoan}>Add Loan +</button>
+        </div>
+        <div>
+          <button onClick={this.handleEstimateTakehomePayAfterTaxes}>Calculate When Loan Can Be Paid Off</button>
+        </div>
+        {takeHomePay}
+        {totalExpense}
+        {loanComplete}
+      </div>
     )
   }
 }
