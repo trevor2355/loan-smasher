@@ -1,7 +1,7 @@
 import React from 'react';
 import Expense from './Expense.jsx';
 import Loan from './Loan.jsx';
-import accounting from 'accounting';
+import Summary from './Summary.jsx';
 import data from '../data.js'
 
 class App extends React.Component {
@@ -9,12 +9,11 @@ class App extends React.Component {
     super(props)
 
     this.state = {
-      loanAmount: '12390',
-      interestRate: '.0899',
       salary: '72000',
       beginWorkingDate: '7/20/2020',
       expenses: data.expenses,
-      loans: data.loans
+      loans: data.loans,
+      results: []
     }
 
     this.handleInput = this.handleInput.bind(this);
@@ -243,13 +242,27 @@ class App extends React.Component {
     var beginWorkingDate = this.handleDateTransition(this.state.beginWorkingDate);
     //calculate when the first paycheck will come. (estimate that it is two weeks after starting the job)
     var milliseconds= beginWorkingDate.setDate(beginWorkingDate.getDate() + 14);
-    var currentDate = new Date(milliseconds);
-    var daysPast = 0;
+    var beginWorkingDate = new Date(milliseconds);
+    var currentDate = new Date();
+    currentDate.setHours(0);
+    currentDate.setMinutes(0);
+    currentDate.setSeconds(0);
+    currentDate.setMilliseconds(0);
+    var daysPast = (currentDate - beginWorkingDate) / (1000 * 24 * 60 * 60);
+    console.log(-28 % 14 === 0)
+    console.log('daysPast: ', daysPast)
+    var results = []
 
     var loans = JSON.parse(JSON.stringify(this.state.loans));
-    console.log('loans: ', loans)
+    for (var i = 0; i < loans.length; i++) {
+      loans[i].principalLoanAmount = parseFloat(this.state.loans[i].amount)
+    }
+
     for (var i = 0; i < loans.length; i++) {
       var currentLoan = loans[i];
+
+      var totalPaidToCurrentLoan = 0;
+
       // var currentLoanAmount = parseFloat(currentLoan.amount);
       while(parseFloat(currentLoan.amount) > 0 || currentLoan.reoccurringLoanInfo.length > 0) {
 
@@ -266,90 +279,144 @@ class App extends React.Component {
           //check if reoccurring payments are necessary
           if (currentLoanDaily.reoccurringLoanInfo.length > 0) {
             if (currentDate.getTime() === Date.parse(currentLoanDaily.reoccurringLoanInfo[0]['date'])) {
-              console.log('TIME FOR ANOTHER SEMESTER OF SCHOOL: ', currentDate)
-              console.log('Loan Amount Before next Semester: ', currentLoanDailyAmount)
-              console.log('REOCCURRING ARRAY: ', currentLoanDaily.reoccurringLoanInfo)
+              // console.log('TIME FOR ANOTHER SEMESTER OF SCHOOL: ', currentDate)
+              // console.log('Loan Amount Before next Semester: ', currentLoanDailyAmount)
+              // console.log('REOCCURRING ARRAY: ', currentLoanDaily.reoccurringLoanInfo)
               currentLoanDailyAmount += parseFloat(currentLoanDaily.reoccurringLoanInfo[0]['amount'])
-              console.log('Loan Amount AFTER next Semester: ', currentLoanDailyAmount)
+              // console.log('Loan Amount AFTER next Semester: ', currentLoanDailyAmount)
+
+              currentLoanDaily.principalLoanAmount += parseFloat(currentLoanDaily.reoccurringLoanInfo[0]['amount'])
+
               currentLoanDaily.reoccurringLoanInfo.shift()
             }
           }
           currentLoanDaily.amount = currentLoanDailyAmount
         }
 
-        if (daysPast % 14 === 0 || daysPast === 0) {
+        if (daysPast > -1 && (daysPast % 14 === 0 || daysPast === 0)) {
+          console.log("CURRENT DATE: ", currentDate)
           currentLoan.amount = parseFloat(currentLoan.amount) - this.state.totalRemainingAfterExpenses;
+          totalPaidToCurrentLoan += this.state.totalRemainingAfterExpenses;
         }
         daysPast++
       }
-      console.log('LOAN PAYED OFF ON: ', currentDate)
+      var amountLeftAfterLoanPaidOff = Math.abs(currentLoan.amount);
+      totalPaidToCurrentLoan += currentLoan.amount
+      var payedOffOn = new Date(currentDate)
+      var principalLoanAmount = currentLoan.principalLoanAmount
+      var interestPaid = totalPaidToCurrentLoan - principalLoanAmount;
+      var newResults = {
+        loanName: currentLoan.description,
+        payedOffOn,
+        totalPaidToCurrentLoan,
+        amountLeftAfterLoanPaidOff,
+        principalLoanAmount,
+        interestPaid
+      }
+      results.push(newResults);
     }
+    this.setState({
+      results
+    }, () => console.log('results: ', this.state.results))
   }
 
 
   render() {
 
-    var takeHomePay;
-    if (this.state.takeHomePay) {
-      takeHomePay = (
-        <div>
-          <h5>Take Home Pay: {accounting.formatMoney(this.state.takeHomePay)}</h5>
-          <h5>Pay Check After Taxes: {accounting.formatMoney(this.state.netPayCheck)}</h5>
-        </div>
-      )
-    }
+    // var takeHomePay;
+    // if (this.state.takeHomePay) {
+    //   takeHomePay = (
+    //     <div>
+    //       <h5>Take Home Pay: {accounting.formatMoney(this.state.takeHomePay)}</h5>
+    //       <h5>Pay Check After Taxes: {accounting.formatMoney(this.state.netPayCheck)}</h5>
+    //     </div>
+    //   )
+    // }
 
-    var totalExpense;
-    if (this.state.totalExpense) {
-      totalExpense = (
-        <div>
-          <h5>Total Expenses Each Pay Period: {accounting.formatMoney(this.state.totalExpense)}</h5>
-          <h5>Amount Left After Expenses Each Pay Period: {accounting.formatMoney(this.state.totalRemainingAfterExpenses)} </h5>
-        </div>
-      )
-    }
+    // var totalExpense;
+    // if (this.state.totalExpense) {
+    //   totalExpense = (
+    //     <div>
+    //       <h5>Total Expenses Each Pay Period: {accounting.formatMoney(this.state.totalExpense)}</h5>
+    //       <h5>Amount Left After Expenses Each Pay Period: {accounting.formatMoney(this.state.totalRemainingAfterExpenses)} </h5>
+    //     </div>
+    //   )
+    // }
 
-    var loanComplete;
-    if (this.state.loanPaidOffOn) {
-      loanComplete = (
-        <div>
-          <h5>Loan will be Paid off in Full on: {this.state.loanPaidOffOn.toDateString()}</h5>
-          <h5>The Amount left over from last payment is: {accounting.formatMoney(this.state.amountLeftAfterLoanPaidOff)}</h5>
-        </div>
-      )
+    // var loanComplete;
+    // if (this.state.loanPaidOffOn) {
+    //   loanComplete = (
+    //     <div>
+    //       <h5>Loan will be Paid off in Full on: {this.state.loanPaidOffOn.toDateString()}</h5>
+    //       <h5>The Amount left over from last payment is: {accounting.formatMoney(this.state.amountLeftAfterLoanPaidOff)}</h5>
+    //     </div>
+    //   )
+    // }
+
+    var summary;
+    if (this.state.results.length > 0) {
+      summary = <Summary 
+                  salary={this.state.salary}
+                  grossPayCheck={this.state.grossPayCheck}
+                  netPayCheck={this.state.netPayCheck}
+                  takeHomePay={this.state.takeHomePay}
+                  totalYearTaxes={this.state.salary - this.state.takeHomePay}
+                  totalExpensesEachPayCheck={this.state.totalExpense}
+                  amountToBePaidToLoanEachPayCheck={this.state.totalRemainingAfterExpenses}
+                  results={this.state.results}
+                  />
+      console.log(this.state)
     }
 
     return (
       <div>
         <h1>Loan Smasher</h1>
-        <h2>Inputs</h2>
-        <h3>Income</h3>
-        <div>
-          <span>Salary: </span>
-          <input type='text' onChange={this.handleInput} id='salary' value={this.state.salary} placeholder='Ex: 40000'></input>
+        <p>
+        This loan calculator will not only help you know when your laon will be paid off, but it will smash it in a hurry!
+        </p>
+        <div className='income-grid'>
+          <div className='income-container'>
+            <h3>Income</h3>
+            <div className='input-container'>
+              <span>Salary: </span>
+              <input type='text' onChange={this.handleInput} id='salary' value={this.state.salary} placeholder='Ex: 40000'></input>
+            </div>
+            <div className='input-container'>
+              <span>Begin Working On: </span>
+              <input type='text' onChange={this.handleInput} id='beginWorkingDate' value={this.state.beginWorkingDate} placeholder='Ex: 6/4/1996'></input>
+            </div>
+          </div>
+          <div className='tax-container'>
+            <button>See how taxes will affect your salary</button>
+          </div>
         </div>
-        <div>
-          <span>Begin Working On: </span>
-          <input type='text' onChange={this.handleInput} id='beginWorkingDate' value={this.state.beginWorkingDate} placeholder='Ex: 6/4/1996'></input>
+        <div className='monthly-expenses-container'>
+          <h3>Monthly Expenses </h3>
+          {this.state.expenses.map(expense => {
+            return <Expense expense={expense} key={expense.id} handleMonthlyExpenseInput={this.handleMonthlyExpenseInput}/>
+          })}
+          <div className='addMonthlyExpense'>
+            <button onClick={this.addExpense}>Add Monthly Expense +</button>
+          </div>
+          <div className='budget-button-container'>
+          <button>See your bi-weekly budget</button>
+          </div>
         </div>
-        <h3>Monthly Expenses: </h3>
-        {this.state.expenses.map(expense => {
-          return <Expense expense={expense} key={expense.id} handleMonthlyExpenseInput={this.handleMonthlyExpenseInput}/>
-        })}
-        <button onClick={this.addExpense}>Add Monthly Expense +</button>
-        <h3>Loan Info</h3>
-        {this.state.loans.map(loan => {
-          return <Loan loan={loan} key={loan.id} handleLoanInput={this.handleLoanInput}/>
-        })}
-        <div>
-          <button onClick={this.addLoan}>Add Loan +</button>
+        <div className='loan-info-heading'>
+          <h3>Loan Info</h3>
         </div>
-        <div>
+        <div className='loans-container'>
+          {this.state.loans.map(loan => {
+            return <Loan loan={loan} key={loan.id} handleLoanInput={this.handleLoanInput}/>
+          })}
+          <div className='addLoan'>
+            <button onClick={this.addLoan}>Add Loan +</button>
+          </div>
+        </div>
+        <div className='calculate-button'>
           <button onClick={this.handleEstimateTakehomePayAfterTaxes}>Calculate When Loan Can Be Paid Off</button>
         </div>
-        {takeHomePay}
-        {totalExpense}
-        {loanComplete}
+        {summary}
       </div>
     )
   }

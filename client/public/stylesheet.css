@@ -1,11 +1,164 @@
+body {
+  font-family: 'Roboto', sans-serif;
+  color: rgb(44, 44, 44);
+}
+
+p {
+  margin-left: 12%;
+  margin-right: 12%;
+}
+
 input {
-  border: solid 1px gray
+  border: solid 1px gray;
+  height: 32px;
+  padding-left: 8px;
+  font-size: 20px;
+  border-radius: 8px;
 }
 
 button {
-  background-color: rgb(141, 219, 24);
+  background-color: rgb(104, 118, 182);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  height: 40px;
+  font-size: 20px;
+  margin: 16px;
+}
+
+button:hover {
+  cursor: pointer;
+  background-color:  rgb(73, 87, 151);
+}
+
+button:focus {
+  background-color:  rgb(73, 87, 151);
+  border: none;
+  outline: none;
+}
+
+h1 {
+  text-align: center;
+}
+
+h3 {
+  margin-top: 0px;
+  margin-bottom: 8px;
+  font-size: 32px;
 }
 
 h5 {
   color: darkred
+}
+
+span {
+  padding-right: 8px;
+  padding-left: 8px;
+}
+
+.income-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  border: solid 1px gray;
+  border-radius: 8px;
+  margin-left: 12%;
+  margin-right: 12%;
+}
+
+.income-container {
+  background-color: rgb(245, 245, 245);
+  padding: 32px;
+  border-radius: 8px;
+}
+
+.tax-container {
+  justify-self: center;
+  align-self: center;
+}
+
+.input-container {
+  padding: 8px;
+  font-size: 24px;
+}
+
+.monthly-expenses-container {
+  background-color: rgb(245, 245, 245);
+  padding: 32px;
+  border: solid 1px gray;
+  border-radius: 8px;
+  margin-left: 12%;
+  margin-right: 12%;
+  margin-top: 64px;
+  margin-bottom: 64px;
+}
+
+.monthly-expenses-container input {
+  font-size: 16px;
+  height: 24px;
+}
+
+.monthlyExpense {
+  padding: 8px;
+  text-align: center;
+}
+
+.addMonthlyExpense button {
+  background-color: rgb(74, 173, 82);
+  font-size: 12px;
+  height: 32px;
+}
+
+.budget-button-container {
+  padding-top: 24px;
+  text-align: center;
+  border-top: solid 2px gray;
+}
+
+.loan-info-heading {
+  margin-left: 12%;
+}
+
+.loans-container {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  margin-left: 12%;
+  margin-right: 12%;
+  column-gap: 16px;
+}
+
+.loan-container {
+ padding: 0px;
+}
+
+.loan-card {
+  border: solid 1px gray;
+  background-color: rgb(245, 245, 245);
+  padding: 16px;
+  border-radius: 8px;
+}
+
+.info-toggle {
+  text-align: right;
+  margin-top: 8px;
+  font-size: 12px;
+}
+
+.info-toggle:hover {
+  cursor: pointer;
+  color: rgb(73, 87, 151);
+}
+
+.loan-container button {
+  background-color: rgb(74, 173, 82);
+  font-size: 12px;
+}
+
+.addLoan button{
+  background-color: rgb(74, 173, 82);
+  font-size: 12px;
+  height: 32px;
+}
+
+.calculate-button {
+  text-align: center;
 }
