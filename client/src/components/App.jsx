@@ -159,7 +159,7 @@ class App extends React.Component {
   }
 
   handleLoanInput(event) {
-    var id = event.target.parentElement.parentElement.id;
+    var id = event.target.parentElement.parentElement.parentElement.id;
     var loans = this.state.loans;
     var className = event.target.className;
     console.log('id: ', id)
@@ -395,7 +395,7 @@ class App extends React.Component {
           {this.state.expenses.map(expense => {
             return <Expense expense={expense} key={expense.id} handleMonthlyExpenseInput={this.handleMonthlyExpenseInput}/>
           })}
-          <div className='addMonthlyExpense'>
+          <div className='addMonthlyExpensef'>
             <button onClick={this.addExpense}>Add Monthly Expense +</button>
           </div>
           <div className='budget-button-container'>
