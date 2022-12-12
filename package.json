@@ -21,7 +21,7 @@
   "homepage": "https://github.com/trevor2355/loan-smasher#readme",
   "dependencies": {
     "accounting": "^0.4.1",
-    "express": "^4.17.1",
+    "express": "^4.17.3",
     "morgan": "^1.10.0",
     "path": "^0.12.7",
     "react": "^16.13.1",
